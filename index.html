@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Calculatrice Scientifique (v2)</title>
+<style>
+  :root{
+    --bg:#0f1220; --panel:#151a2e; --btn:#1c2442; --accent:#47c2ff; --text:#e8efff;
+    --muted:#9fb0d0; --warn:#ffb347; --ok:#7cf7cf; --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 800px at 80% -10%, #101737 0%, #0f1220 60%);color:var(--text);font:16px/1.4 system-ui,Segoe UI,Roboto,Inter,sans-serif;display:grid;place-items:center;min-height:100vh;padding:14px}
+  .wrap{width:min(430px,100%);display:grid;gap:12px}
+  .top{display:flex;gap:10px;align-items:center;justify-content:space-between}
+  .mode{background:var(--panel);border:1px solid #2a365e;border-radius:999px;padding:6px 10px;display:flex;gap:8px;align-items:center}
+  .mode button{background:none;border:0;color:var(--muted);padding:6px 10px;border-radius:999px;cursor:pointer}
+  .mode button.active{background:linear-gradient(135deg,#2a7fff33,#47c2ff33);color:var(--text)}
+  .screen{background:var(--panel);border:1px solid #2a365e;border-radius:var(--radius);padding:10px 12px}
+  .expr{width:100%;background:transparent;border:0;color:var(--text);font-size:22px;outline:none}
+  .result{color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+  .grid{display:grid;gap:8px;grid-template-columns:repeat(6, 1fr)}
+  button.k{background:var(--btn);color:var(--text);border:1px solid #263258;border-radius:12px;padding:12px 8px;font-weight:600;cursor:pointer}
+  button.k:active{transform:translateY(1px)}
+  .op{color:var(--accent)}
+  .equal{background:linear-gradient(135deg,#2a7fff,#47c2ff);color:#061120;border:0}
+  .wide{grid-column:span 2}
+  .danger{color:var(--warn)}
+  .ok{color:var(--ok)}
+  .bar{display:flex;gap:8px}
+  .hist{background:var(--panel);border:1px solid #2a365e;border-radius:var(--radius);padding:8px;max-height:120px;overflow:auto}
+  .hist div{padding:6px;border-bottom:1px dashed #2a365e;cursor:pointer}
+  .hist div:last-child{border-bottom:0}
+  .tiny{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="mode" id="mode">
+      <span class="tiny">Angle :</span>
+      <button data-mode="DEG" class="active">DEG</button>
+      <button data-mode="RAD">RAD</button>
+    </div>
+    <div class="bar">
+      <button class="k ok wide" id="btnCopy">Copier</button>
+      <button class="k danger wide" id="btnClearHist">Eff. Hist</button>
+    </div>
+  </div>
+
+  <div class="screen">
+    <input id="expr" class="expr" placeholder="Tape une expression… (ex: 2*sin(30)+log(100))" />
+    <div id="result" class="result">= 0</div>
+    <div class="tiny" id="info">π, e, sin, cos, tan, asin, acos, atan, ln, log, √, ^, !, Ans, M+, M-, MR, MC</div>
+  </div>
+
+  <div class="grid" id="keys">
+    <!-- Fonctions 1 -->
+    <button class="k" data-insert="sin(">sin</button>
+    <button class="k" data-insert="cos(">cos</button>
+    <button class="k" data-insert="tan(">tan</button>
+    <button class="k" data-insert="asin(">asin</button>
+    <button class="k" data-insert="acos(">acos</button>
+    <button class="k" data-insert="atan(">atan</button>
+    <!-- Fonctions 2 -->
+    <button class="k" data-insert="ln(">ln</button>
+    <button class="k" data-insert="log(">log</button>
+    <button class="k" data-insert="sqrt(">√</button>
+    <button class="k" data-insert="(">(</button>
+    <button class="k" data-insert=")">)</button>
+    <button class="k" data-insert=",">,</button>
+    <!-- Opérateurs -->
+    <button class="k" data-insert="^">x^y</button>
+    <button class="k" data-insert="!">n!</button>
+    <button class="k" data-insert="pi">π</button>
+    <button class="k" data-insert="e">e</button>
+    <button class="k op" data-insert="*">×</button>
+    <button class="k op" data-insert="/">÷</button>
+    <!-- Nombres + ops -->
+    <button class="k" data-insert="7">7</button>
+    <button class="k" data-insert="8">8</button>
+    <button class="k" data-insert="9">9</button>
+    <button class="k op" data-insert="+">+</button>
+    <button class="k op" data-insert="-">−</button>
+    <button class="k danger" data-action="del">⌫</button>
+    <button class="k" data-insert="4">4</button>
+    <button class="k" data-insert="5">5</button>
+    <button class="k" data-insert="6">6</button>
+    <button class="k" data-insert="%">%</button>
+    <button class="k" data-insert=".">.</button>
+    <button class="k danger" data-action="clear">AC</button>
+    <button class="k" data-insert="1">1</button>
+    <button class="k" data-insert="2">2</button>
+    <button class="k" data-insert="3">3</button>
+    <button class="k" data-insert="Ans">Ans</button>
+    <button class="k" data-action="mplus">M+</button>
+    <button class="k" data-action="mminus">M-</button>
+    <button class="k wide" data-insert="0">0</button>
+    <button class="k" data-insert="00">00</button>
+    <button class="k" data-action="mr">MR</button>
+    <button class="k" data-action="mc">MC</button>
+    <button class="k equal wide" data-action="eval">=</button>
+  </div>
+
+  <div class="hist" id="hist"></div>
+</div>
+
+<script>
+  // --- État ---
+  let angleMode = "DEG";
+  let Ans = 0;
+  let M = 0;
+  const hist = [];
+
+  const exprEl = document.getElementById("expr");
+  const resultEl = document.getElementById("result");
+  const histEl = document.getElementById("hist");
+  const modeEl = document.getElementById("mode");
+
+  // --- Utils ---
+  function toRadians(x){ return x * Math.PI / 180; }
+  function toDegrees(x){ return x * 180 / Math.PI; }
+  function factorial(n){
+    if (n < 0) return NaN;
+    if (n === 0 || n === 1) return 1;
+    let r = 1;
+    for (let i=2;i<=Math.floor(n);i++) r *= i;
+    return r;
+  }
+
+  // Compile l'expression lisible -> JS évaluable
+  function compileExpression(src){
+    let s = src;
+
+    // π et pi, e, Ans
+    s = s.replace(/π|\bpi\b/gi, "Math.PI");
+    s = s.replace(/\be\b/g, "Math.E");
+    s = s.replace(/\bAns\b/g, "(" + Ans + ")");
+
+    // Puissance ^  -> Math.pow(a,b)  (remplacement progressif)
+    while (/\^/.test(s)) {
+      s = s.replace(/(\([^()]+\)|[\d\.eE+-]+|[A-Za-z_][A-Za-z0-9_]*)(\s*)\^(\s*)(\([^()]+\)|[\d\.eE+-]+|[A-Za-z_][A-Za-z0-9_]*)/, "Math.pow($1,$4)");
+    }
+
+    // Pourcentage x% -> (x/100)  (sans casser le modulo a%b)
+    s = s.replace(/(\d+(?:\.\d+)?)(\s*)%/g, "($1/100)");
+
+    // Fonctions trig et autres
+    s = s.replace(/\bsin\s*\(/g, "_sin_(")
+         .replace(/\bcos\s*\(/g, "_cos_(")
+         .replace(/\btan\s*\(/g, "_tan_(")
+         .replace(/\basin\s*\(/g, "_asin_(")
+         .replace(/\bacos\s*\(/g, "_acos_(")
+         .replace(/\batan\s*\(/g, "_atan_(");
+
+    s = s.replace(/\bln\s*\(/g, "Math.log(")     // ln = log naturel
+         .replace(/\blog\s*\(/g, "Math.log10(") // log base 10
+         .replace(/\bsqrt\s*\(/g, "Math.sqrt(");
+
+    // Factorielle
+    s = s.replace(/(\))\s*!/g, "factorial$1");          // (expr)!
+    s = s.replace(/(\d+(?:\.\d+)?)\s*!/g, "factorial($1)"); // 5!
+
+    // Sécurité minimale : caractères autorisés
+    if (/[^0-9+\-*/%^()., a-zA-Z_]/g.test(s)) {
+      throw new Error("Caractère non autorisé");
+    }
+    return s;
+  }
+
+  function evaluate(){
+    const raw = exprEl.value.trim();
+    if (!raw){ resultEl.textContent = "= 0"; return; }
+    try{
+      const code = compileExpression(raw);
+      const scope = {
+        Math, toRadians, toDegrees, factorial,
+        _sin_: (x)=> Math.sin(angleMode==="DEG"? toRadians(Number(x)) : Number(x)),
+        _cos_: (x)=> Math.cos(angleMode==="DEG"? toRadians(Number(x)) : Number(x)),
+        _tan_: (x)=> Math.tan(angleMode==="DEG"? toRadians(Number(x)) : Number(x)),
+        _asin_: (x)=> angleMode==="DEG" ? toDegrees(Math.asin(Number(x))) : Math.asin(Number(x)),
+        _acos_: (x)=> angleMode==="DEG" ? toDegrees(Math.acos(Number(x))) : Math.acos(Number(x)),
+        _atan_: (x)=> angleMode==="DEG" ? toDegrees(Math.atan(Number(x))) : Math.atan(Number(x)),
+      };
+      // eslint-disable-next-line no-new-func
+      const fn = new Function(...Object.keys(scope), `"use strict"; return (${code});`);
+      let val = fn(...Object.values(scope));
+      if (typeof val === "number" && Number.isFinite(val)) {
+        const out = (Math.abs(val) > 1e10 || (Math.abs(val) < 1e-6 && val !== 0))
+                    ? val.toExponential(10)
+                    : Number(val.toPrecision(12)).toString();
+        resultEl.textContent = "= " + out;
+        return out;
+      } else {
+        throw new Error("Expression invalide");
+      }
+    }catch(err){
+      resultEl.textContent = "= Erreur";
+      return null;
+    }
+  }
+
+  function commit(){
+    const raw = exprEl.value.trim();
+    const out = evaluate();
+    if (out !== null){
+      Ans = Number(out);
+      hist.unshift(raw + " = " + out);
+      renderHist();
+    }
+  }
+
+  function renderHist(){
+    histEl.innerHTML = hist.slice(0,40).map(item=>`<div>${item}</div>`).join("");
+  }
+
+  // --- Événements UI ---
+  document.getElementById("keys").addEventListener("click",(e)=>{
+    const b = e.target.closest("button.k");
+    if (!b) return;
+    const ins = b.dataset.insert;
+    const act = b.dataset.action;
+
+    if (ins){
+      insertText(ins);
+      evaluate();
+      return;
+    }
+    if (act === "del"){
+      delOne(); evaluate();
+    } else if (act === "clear"){
+      exprEl.value = ""; resultEl.textContent = "= 0";
+    } else if (act === "eval"){
+      commit();
+    } else if (act === "mplus"){
+      const val = evaluate(); if (val !== null) M += Number(val); flashInfo(`M = ${M}`);
+    } else if (act === "mminus"){
+      const val = evaluate(); if (val !== null) M -= Number(val); flashInfo(`M = ${M}`);
+    } else if (act === "mr"){
+      insertText(String(M)); evaluate();
+    } else if (act === "mc"){
+      M = 0; flashInfo("Mémoire effacée");
+    }
+  });
+
+  histEl.addEventListener("click",(e)=>{
+    const d = e.target.closest("div");
+    if (!d) return;
+    const eq = d.textContent.split(" = ")[0];
+    exprEl.value = eq;
+    evaluate();
+  });
+
+  modeEl.addEventListener("click",(e)=>{
+    const btn = e.target.closest("button[data-mode]");
+    if (!btn) return;
+    angleMode = btn.dataset.mode;
+    modeEl.querySelectorAll("button").forEach(b=>b.classList.toggle("active", b===btn));
+    evaluate();
+  });
+
+  exprEl.addEventListener("input", evaluate);
+  exprEl.addEventListener("keydown",(e)=>{
+    if (e.key === "Enter"){ e.preventDefault(); commit(); }
+    if (e.key === "Escape"){ exprEl.value=""; resultEl.textContent="= 0"; }
+  });
+
+  document.getElementById("btnCopy").addEventListener("click", async ()=>{
+    const v = resultEl.textContent.replace(/^=\s*/, "");
+    try{ await navigator.clipboard.writeText(v); flashInfo("Résultat copié"); }catch{ flashInfo("Copie impossible"); }
+  });
+  document.getElementById("btnClearHist").addEventListener("click", ()=>{ hist.length = 0; renderHist(); });
+
+  function flashInfo(msg){
+    const el = document.getElementById("info");
+    el.textContent = msg;
+    setTimeout(()=> el.textContent = "π, e, sin, cos, tan, asin, acos, atan, ln, log, √, ^, !, Ans, M+, M-, MR, MC", 1500);
+  }
+
+  function insertText(t){
+    const start = exprEl.selectionStart ?? exprEl.value.length;
+    const end   = exprEl.selectionEnd ?? exprEl.value.length;
+    exprEl.setRangeText(t, start, end, "end");
+    exprEl.focus();
+  }
+  function delOne(){
+    const pos = exprEl.selectionStart ?? exprEl.value.length;
+    if (pos>0){ exprEl.setRangeText("", pos-1, pos, "end"); }
+  }
+
+  // init
+  evaluate();
+</script>
+</body>
+</html>
